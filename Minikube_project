@@ -1,0 +1,312 @@
+################################################################################################################################
+
+MetaData:
+
+Name : Rahul
+Date : 14-01-2024 ( Happy Sankranti )
+
+Used : Linux Terminal, Kubernetes MInikube, Prometheus, Grafana.
+Program Language : Shell Scripting, YAML.
+
+##################################### project steps for installing grafana and promothoues #####################################
+
+For Linux, you can use the kvm2 driver, which is a popular choice. Make sure you have KVM (Kernel-based Virtual Machine) installed on your machine. You can install it using the following commands:
+bash
+
+sudo apt update
+sudo apt install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils
+
+After installing KVM, you can start Minikube with the kvm2 driver:
+
+bash
+
+minikube start --memory=4098 --driver=kvm2
+
+This should work for Linux/amd64. If you encounter any issues, make sure that your system meets the requirements for running Minikube with the kvm2 driver.
+
+################################################################################################################################
+
+rahul@rahul-VirtualBox:~$ minikube start --memory=4098 --driver=kvm2                                                                
+😄  minikube v1.32.0 on Ubuntu 22.04
+✨  Using the kvm2 driver based on user configuration
+
+💣  Exiting due to PROVIDER_KVM2_ERROR: /usr/bin/virsh domcapabilities --virttype kvm failed:
+error: failed to connect to the hypervisor
+error: Failed to connect socket to '/var/run/libvirt/libvirt-sock': Permission denied
+exit status 1
+💡  Suggestion: Follow your Linux distribution instructions for configuring KVM
+📘  Documentation: https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/
+
+###############################################################################################################################
+
+rahul@rahul-VirtualBox:~$ kubectl get pods -A
+NAMESPACE     NAME                               READY   STATUS    RESTARTS   AGE
+kube-system   coredns-5dd5756b68-smp8g           0/1     Running   0          6s
+kube-system   etcd-minikube                      1/1     Running   0          23s
+kube-system   kube-apiserver-minikube            1/1     Running   0          19s
+kube-system   kube-controller-manager-minikube   1/1     Running   0          23s
+kube-system   kube-proxy-rxxr9                   1/1     Running   0          6s
+
+###############################################################################################################################
+installing prometheus
+
+Download prometheus
+
+rahul@rahul-VirtualBox:~$ curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+sudo apt-get install apt-transport-https --yes
+
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  1699  100  1699    0     0    647      0  0:00:02  0:00:02 --:--:--   647
+
+
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+apt-transport-https is already the newest version (2.4.11).
+0 upgraded, 0 newly installed, 0 to remove and 5 not upgraded.
+
+
+rahul@rahul-VirtualBox:~$ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+deb [arch=amd64 signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main
+
+
+rahul@rahul-VirtualBox:~$ sudo apt-get update
+Get:1 https://baltocdn.com/helm/stable/debian all InRelease [7,652 B]                                                    
+Get:2 https://baltocdn.com/helm/stable/debian all/main amd64 Packages [3,912 B]                                         
+Hit:3 http://security.ubuntu.com/ubuntu jammy-security InRelease                           
+Hit:4 http://in.archive.ubuntu.com/ubuntu jammy InRelease     
+Hit:5 http://in.archive.ubuntu.com/ubuntu jammy-updates InRelease
+Hit:6 http://in.archive.ubuntu.com/ubuntu jammy-backports InRelease
+Hit:7 https://download.docker.com/linux/ubuntu jammy InRelease
+Fetched 11.6 kB in 6s (1,989 B/s)
+Reading package lists... Done
+
+
+rahul@rahul-VirtualBox:~$ sudo apt-get install helm
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+The following NEW packages will be installed:
+  helm
+0 upgraded, 1 newly installed, 0 to remove and 5 not upgraded.
+Need to get 16.2 MB of archives.
+After this operation, 51.2 MB of additional disk space will be used.
+Get:1 https://baltocdn.com/helm/stable/debian all/main amd64 helm amd64 3.13.3-1 [16.2 MB]
+Fetched 16.2 MB in 21s (752 kB/s)                                                                                                  
+Selecting previously unselected package helm.
+(Reading database ... 211981 files and directories currently installed.)
+Preparing to unpack .../helm_3.13.3-1_amd64.deb ...
+Unpacking helm (3.13.3-1) ...
+Setting up helm (3.13.3-1) ...
+Processing triggers for man-db (2.10.2-1) ...
+
+
+
+rahul@rahul-VirtualBox:~$ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+"prometheus-community" has been added to your repositories
+
+
+rahul@rahul-VirtualBox:~$ helm repo update
+
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "prometheus-community" chart repository
+Update Complete. ⎈Happy Helming!⎈
+
+
+
+rahul@rahul-VirtualBox:~$ helm install prometheus prometheus-community/prometheus
+
+NAME: prometheus
+LAST DEPLOYED: Sat Jan 13 13:39:45 2024
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+The Prometheus server can be accessed via port 80 on the following DNS name from within your cluster:
+prometheus-server.default.svc.cluster.local
+
+
+Get the Prometheus server URL by running these commands in the same shell:
+  export POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/name=prometheus,app.kubernetes.io/instance=prometheus" -o jsonpath="{.items[0].metadata.name}")
+  kubectl --namespace default port-forward $POD_NAME 9090
+
+
+The Prometheus alertmanager can be accessed via port 9093 on the following DNS name from within your cluster:
+prometheus-alertmanager.default.svc.cluster.local
+
+
+Get the Alertmanager URL by running these commands in the same shell:
+  export POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/name=alertmanager,app.kubernetes.io/instance=prometheus" -o jsonpath="{.items[0].metadata.name}")
+  kubectl --namespace default port-forward $POD_NAME 9093
+
+#################################################################################
+######   WARNING: Pod Security Policy has been disabled by default since    #####
+######            it deprecated after k8s 1.25+. use                        #####
+######            (index .Values "prometheus-node-exporter" "rbac"          #####
+###### .          "pspEnabled") with (index .Values                         #####
+######            "prometheus-node-exporter" "rbac" "pspAnnotations")       #####
+######            in case you still need it.                                #####
+#################################################################################
+
+
+The Prometheus PushGateway can be accessed via port 9091 on the following DNS name from within your cluster:
+prometheus-prometheus-pushgateway.default.svc.cluster.local
+
+Get the PushGateway URL by running these commands in the same shell:
+  export POD_NAME=$(kubectl get pods --namespace default -l "app=prometheus-pushgateway,component=pushgateway" -o jsonpath="{.items[0].metadata.name}")
+  kubectl --namespace default port-forward $POD_NAME 9091
+
+For more information on running Prometheus, visit:
+https://prometheus.io/
+
+
+rahul@rahul-VirtualBox:~$ kubectl get pods
+NAME                                                 READY   STATUS              RESTARTS   AGE
+prometheus-alertmanager-0                            0/1     ContainerCreating   0          80s
+prometheus-kube-state-metrics-6b464f5b88-689ft       1/1     Running             0          81s
+prometheus-prometheus-node-exporter-tb6b5            1/1     Running             0          81s
+prometheus-prometheus-pushgateway-7857c44f49-426nx   1/1     Running             0          81s
+prometheus-server-6b68fbd54b-b2nzd                   0/2     ContainerCreating   0          81s
+
+
+After installing helm and prometheus and check
+
+rahul@rahul-VirtualBox:~$ kubectl get pods
+rahul@rahul-VirtualBox:~$ kubectl get svc
+
+expose tthe prometheus server
+
+step-1
+convert to prometheus server to nodeport mode
+
+rahul@rahul-VirtualBox:~$ kubectl expose service prometheus-server --type=NodePort --target-port=9090 --name=prometheus-server-ext
+service/prometheus-server-ext exposed
+
+minikube ip
+
+take a browser and type http://ipaddress:portNoOfServer And click enter
+
+###############################################################################################################################
+
+installing grafana and exposing
+
+rahul@rahul-VirtualBox:~$ helm repo add grafana https://grafana.github.io/helm-charts
+"grafana" has been added to your repositories
+
+rahul@rahul-VirtualBox:~$ helm repo update
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "grafana" chart repository
+...Successfully got an update from the "prometheus-community" chart repository
+Update Complete. ⎈Happy Helming!⎈
+
+rahul@rahul-VirtualBox:~$ helm install grafana grafana/grafana
+NAME: grafana
+LAST DEPLOYED: Sat Jan 13 14:09:20 2024
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+NOTES:
+1. Get your 'admin' user password by running:
+
+   kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+
+
+2. The Grafana server can be accessed via port 80 on the following DNS name from within your cluster:
+
+   grafana.default.svc.cluster.local
+
+   Get the Grafana URL to visit by running these commands in the same shell:
+     export POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=grafana" -o jsonpath="{.items[0].metadata.name}")
+     kubectl --namespace default port-forward $POD_NAME 3000
+
+3. Login with the password from step 1 and the username: admin
+#################################################################################
+######   WARNING: Persistence is disabled!!! You will lose your data when   #####
+######            the Grafana pod is terminated.                            #####
+#################################################################################
+rahul@rahul-VirtualBox:~$ kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+ugtyRsbcXo33mQ4L3fNsHTzMcUuWCScH7YQ2wH8i
+rahul@rahul-VirtualBox:~$ kuctl get svc
+Command 'kuctl' not found, did you mean:
+  command 'knctl' from snap knctl (v0.3.0)
+  command 'auctl' from deb nas-bin (1.9.4-7build1)
+See 'snap info <snapname>' for additional versions.
+
+rahul@rahul-VirtualBox:~$ kubectl get svc
+NAME                                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+grafana                               ClusterIP   10.108.113.119   <none>        80/TCP         5m46s
+kubernetes                            ClusterIP   10.96.0.1        <none>        443/TCP        53m
+prometheus-alertmanager               ClusterIP   10.110.236.138   <none>        9093/TCP       35m
+prometheus-alertmanager-headless      ClusterIP   None             <none>        9093/TCP       35m
+prometheus-kube-state-metrics         ClusterIP   10.96.176.183    <none>        8080/TCP       35m
+prometheus-prometheus-node-exporter   ClusterIP   10.97.211.149    <none>        9100/TCP       35m
+prometheus-prometheus-pushgateway     ClusterIP   10.106.177.240   <none>        9091/TCP       35m
+prometheus-server                     ClusterIP   10.100.205.54    <none>        80/TCP         35m
+prometheus-server-ext                 NodePort    10.100.30.76     <none>        80:32644/TCP   19m
+
+
+rahul@rahul-VirtualBox:~$ kubectl expose service grafana --type=NodePort --target-port=3000 --name=grafana-ext
+service/grafana-ext exposed
+
+
+rahul@rahul-VirtualBox:~$ minikube ip
+192.168.49.2
+
+
+rahul@rahul-VirtualBox:~$ kubectl get svc
+NAME                                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+grafana                               ClusterIP   10.108.113.119   <none>        80/TCP         8m3s
+grafana-ext                           NodePort    10.101.212.170   <none>        80:32584/TCP   55s
+kubernetes                            ClusterIP   10.96.0.1        <none>        443/TCP        56m
+prometheus-alertmanager               ClusterIP   10.110.236.138   <none>        9093/TCP       37m
+prometheus-alertmanager-headless      ClusterIP   None             <none>        9093/TCP       37m
+prometheus-kube-state-metrics         ClusterIP   10.96.176.183    <none>        8080/TCP       37m
+prometheus-prometheus-node-exporter   ClusterIP   10.97.211.149    <none>        9100/TCP       37m
+prometheus-prometheus-pushgateway     ClusterIP   10.106.177.240   <none>        9091/TCP       37m
+prometheus-server                     ClusterIP   10.100.205.54    <none>        80/TCP         37m
+prometheus-server-ext                 NodePort    10.100.30.76     <none>        80:32644/TCP   21m
+
+###############################################################################################################################
+exposing kube-state-metric-expose
+
+rahul@rahul-VirtualBox:~$ kubectl expose service prometheus-kube-state-metrics --type=NodePort --target-port=8080 --name=prometheus-kube-state-metrics-ext
+service/prometheus-kube-state-metrics-ext exposed
+
+
+rahul@rahul-VirtualBox:~$ kubectl get svc
+NAME                                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+grafana                               ClusterIP   10.108.113.119   <none>        80/TCP           31m
+grafana-ext                           NodePort    10.101.212.170   <none>        80:32584/TCP     24m
+kubernetes                            ClusterIP   10.96.0.1        <none>        443/TCP          79m
+prometheus-alertmanager               ClusterIP   10.110.236.138   <none>        9093/TCP         61m
+prometheus-alertmanager-headless      ClusterIP   None             <none>        9093/TCP         61m
+prometheus-kube-state-metrics         ClusterIP   10.96.176.183    <none>        8080/TCP         61m
+prometheus-kube-state-metrics-ext     NodePort    10.106.165.171   <none>        8080:31029/TCP   14s
+prometheus-prometheus-node-exporter   ClusterIP   10.97.211.149    <none>        9100/TCP         61m
+prometheus-prometheus-pushgateway     ClusterIP   10.106.177.240   <none>        9091/TCP         61m
+prometheus-server                     ClusterIP   10.100.205.54    <none>        80/TCP           61m
+prometheus-server-ext                 NodePort    10.100.30.76     <none>        80:32644/TCP     45m
+
+take a browser and searrch http://ipaddMiniKube:TCP enter
+
+################################################################################################################################
+
+Finall Svc
+
+rahul@rahul-VirtualBox:~$ kubectl get svc
+NAME                                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+grafana                               ClusterIP   10.108.113.119   <none>        80/TCP           52m
+grafana-ext                           NodePort    10.101.212.170   <none>        80:32584/TCP     45m
+kubernetes                            ClusterIP   10.96.0.1        <none>        443/TCP          100m
+prometheus-alertmanager               ClusterIP   10.110.236.138   <none>        9093/TCP         82m
+prometheus-alertmanager-headless      ClusterIP   None             <none>        9093/TCP         82m
+prometheus-kube-state-metrics         ClusterIP   10.96.176.183    <none>        8080/TCP         82m
+prometheus-kube-state-metrics-ext     NodePort    10.106.165.171   <none>        8080:31029/TCP   21m
+prometheus-prometheus-node-exporter   ClusterIP   10.97.211.149    <none>        9100/TCP         82m
+prometheus-prometheus-pushgateway     ClusterIP   10.106.177.240   <none>        9091/TCP         82m
+prometheus-server                     ClusterIP   10.100.205.54    <none>        80/TCP           82m
+prometheus-server-ext                 NodePort    10.100.30.76     <none>        80:32644/TCP     66m
+
+########################################################Complete###############################################################
